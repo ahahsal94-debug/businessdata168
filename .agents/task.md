@@ -1,0 +1,6 @@
+- [ ] Update database schema and helpers for license keys in `db.ts`
+- [ ] Update server API endpoints and middleware in `server.ts`
+- [ ] Update `Login.tsx` register form to require a license key
+- [ ] Create `RenewLicense.tsx` React component
+- [ ] Integrate Renew UI and Key Generator tab in `App.tsx`
+- [ ] Verify application boots and subscription locks work correctly

@@ -1,0 +1,8 @@
+{
+  "name": "Customer & Product Manager",
+  "description": "An interactive management system in Khmer and English to register products, track customer purchases, handle payment statuses (Paid, COD, Unpaid), and apply discounts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
