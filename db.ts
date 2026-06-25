@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { execSync } from "child_process";
 
 const DB_DIR = path.join(process.cwd(), "businessdata");
 const DB_PATH = path.join(DB_DIR, "database.json");
@@ -10,6 +11,61 @@ const ENV_PATH = path.join(process.cwd(), ".env");
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
+
+// Sync database from cloud on startup
+function syncFromCloudOnStartup() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    console.log("No cloud database credentials configured (UPSTASH_REDIS_REST_URL/TOKEN). Running in local-only mode.");
+    return;
+  }
+
+  try {
+    console.log("Syncing database from Upstash Cloud...");
+    const cmd = `curl -s -H "Authorization: Bearer ${token}" "${url}/get/database"`;
+    const responseText = execSync(cmd).toString();
+    const responseObj = JSON.parse(responseText);
+    
+    if (responseObj && responseObj.result) {
+      const dbContent = responseObj.result;
+      fs.writeFileSync(DB_PATH, dbContent, "utf-8");
+      console.log("Database sync from cloud completed successfully!");
+    } else {
+      console.log("Cloud database is empty or not found. Starting with default/local database.");
+    }
+  } catch (error) {
+    console.error("Failed to sync database from cloud on startup:", error);
+  }
+}
+
+function uploadToCloud(dataStr: string) {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return;
+
+  fetch(`${url}/set/database`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+    body: dataStr
+  })
+  .then(res => res.json())
+  .then(resObj => {
+    if (resObj.result === "OK") {
+      // console.log("Database successfully synced to cloud.");
+    } else {
+      console.error("Cloud sync save response not OK:", resObj);
+    }
+  })
+  .catch(err => {
+    console.error("Failed to save database to cloud:", err);
+  });
+}
+
+// Perform sync on startup
+syncFromCloudOnStartup();
 
 // Interfaces
 export interface UserRecord {
@@ -145,7 +201,9 @@ function readDb(): DbSchema {
 
 function writeDb(data: DbSchema): void {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+    const dataStr = JSON.stringify(data, null, 2);
+    fs.writeFileSync(DB_PATH, dataStr, "utf-8");
+    uploadToCloud(dataStr);
   } catch (error) {
     console.error("Error writing database:", error);
   }
