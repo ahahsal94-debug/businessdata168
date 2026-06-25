@@ -13,7 +13,7 @@ import { db, verifyToken, signToken, verifyPassword } from "./db";
 dotenv.config();
 
 const app = express();
-const PORT = 168;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 168;
 
 // Set body parser limits to support up to two large base64 screenshot uploads (50mb)
 app.use(express.json({ limit: "50mb" }));
