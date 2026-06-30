@@ -533,4 +533,8 @@ async function initializeServer() {
   });
 }
 
-initializeServer();
+if (process.env.VERCEL !== "1") {
+  initializeServer();
+}
+
+export default app;
